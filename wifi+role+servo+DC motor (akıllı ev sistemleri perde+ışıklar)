@@ -1,0 +1,87 @@
+import usocket as socket
+from machine import Pin, PWM
+import network
+
+# Set up the Wi-Fi connection
+ssid = 'REPLACE_WITH_YOUR_SSID'
+password = 'REPLACE_WITH_YOUR_PASSWORD'
+
+station = network.WLAN(network.STA_IF)
+station.active(True)
+station.connect(ssid, password)
+
+while station.isconnected() == False:
+    pass
+
+print('Connection successful')
+print(station.ifconfig())
+
+# Set up the servo motor
+servo_pin = 22
+servo = PWM(Pin(servo_pin), freq=50)
+
+# Set up the DC motor
+dc_motor_pin1 = 27
+dc_motor_pin2 = 26
+enable_pin = 14
+
+dc_motor1 = Pin(dc_motor_pin1, Pin.OUT)
+dc_motor2 = Pin(dc_motor_pin2, Pin.OUT)
+enable = Pin(enable_pin, Pin.OUT)
+
+# Set up the PWM signal for the DC motor
+pwm_freq = 30000
+pwm_resolution = 8
+pwm_channel = 0
+
+pwm = PWM(enable, freq=pwm_freq, resolution=pwm_resolution, channel=pwm_channel)
+
+# Set up the web server
+def web_page():
+    html = """<html><head> <title>ESP Web Server</title> </head>
+    <body>
+    <h1>ESP Web Server</h1>
+    <p> Servo Motor Control </p>
+    <form>
+    <label for="angle">Angle:</label>
+    <input type="number" id="angle" name="angle" min="0" max="180">
+    <input type="submit" value="Set Angle">
+    </form>
+    <p> DC Motor Control </p>
+    <form>
+    <label for="speed">Speed:</label>
+    <input type="number" id="speed" name="speed" min="0" max="255">
+    <input type="submit" value="Set Speed">
+    </form>
+    </body>
+    </html>"""
+    return html
+
+def handle_request(conn):
+    request = conn.recv(1024)
+    request = str(request)
+    print('Request: %s' % request)
+    if 'angle' in request:
+        angle = int(request.split('=')[1].split(' ')[0])
+        servo.duty(int((angle - 0) * (122.88 - 25.6) / (180 - 0) + 25.6))
+        print('Servo angle set to %d' % angle)
+    elif 'speed' in request:
+        speed = int(request.split('=')[1].split(' ')[0])
+        pwm.duty(speed)
+        dc_motor1.value(1)
+        dc_motor2.value(0)
+        print('DC motor speed set to %d' % speed)
+    response = web_page()
+    conn.send('HTTP/1.1 200 OK\n')
+    conn.send('Content-Type: text/html\n')
+    conn.send('Connection: close\n\n')
+    conn.sendall(response)
+    conn.close()
+
+s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+s.bind(('', 80))
+s.listen(5)
+
+while True:
+    conn, addr = s.accept()
+    handle_request(conn)
