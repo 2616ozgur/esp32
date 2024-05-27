@@ -1,0 +1,27 @@
+from machine import Pin, I2C
+import ssd1306
+
+# ESP32 Pin assignment 
+i2c = I2C(0, scl=Pin(22), sda=Pin(21))
+
+oled_width = 128
+oled_height = 64
+oled = ssd1306.SSD1306_I2C(oled_width, oled_height, i2c)
+
+# Function to draw a large heart
+def draw_large_heart(x, y):
+    # Define the heart pattern using lines and shapes
+    # This is a simplified example and won't be a perfect 40x40 heart
+    for i in range(20):  # Top part of the heart
+        oled.line(x + 20 - i, y + i, x + 20 + i, y + i, 1)
+    for i in range(20):  # Bottom part of the heart
+        oled.line(x + i, y + i + 20, x + 40 - i, y + i + 20, 1)
+
+# Clear the display
+oled.fill(0)
+
+# Draw the large heart in the center of the screen
+draw_large_heart((oled_width//2) - 20, (oled_height//2) - 20)
+
+# Show the heart on the display
+oled.show()
