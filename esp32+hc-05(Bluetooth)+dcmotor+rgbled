@@ -1,0 +1,65 @@
+import machine
+import utime
+import ubluetooth
+
+# Define the motor pins
+motor1Pin1 = machine.Pin(27, machine.Pin.OUT)
+motor1Pin2 = machine.Pin(26, machine.Pin.OUT)
+enable1Pin = machine.Pin(14, machine.Pin.OUT)
+
+# Define the PWM properties
+freq = 30000
+pwmChannel = 0
+resolution = 8
+dutyCycle = 200
+
+# Set up the PWM signal
+machine.PWM(enable1Pin, freq, resolution)
+
+# Define a function to control the DC motor speed
+def control_motor_speed(speed):
+    if speed == "B":  # slow
+        dutyCycle = 100
+    elif speed == "F":  # fast
+        dutyCycle = 255
+    machine.PWM(enable1Pin, freq, resolution, dutyCycle)
+
+# Define a function to move the DC motor forward
+def move_motor_forward():
+    motor1Pin1.value(0)
+    motor1Pin2.value(1)
+
+# Define a function to move the DC motor backward
+def move_motor_backward():
+    motor1Pin1.value(1)
+    motor1Pin2.value(0)
+
+# Define a function to stop the DC motor
+def stop_motor():
+    motor1Pin1.value(0)
+    motor1Pin2.value(0)
+
+# Set up the Bluetooth module
+bt = ubluetooth.BLE()
+bt.active(True)
+
+# Start the Bluetooth server
+server = bt.start_server()
+
+while True:
+    client, addr = server.accept()
+    print("Connected to", addr)
+    while True:
+        data = client.recv(1024)
+        if data:
+            if data.decode() == "B":
+                control_motor_speed("B")
+                move_motor_forward()
+            elif data.decode() == "F":
+                control_motor_speed("F")
+                move_motor_forward()
+            elif data.decode() == "S":
+                stop_motor()
+        else:
+            break
+    client.close()
