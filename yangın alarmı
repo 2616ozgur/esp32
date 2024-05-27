@@ -1,0 +1,33 @@
+import machine
+import time
+
+# Set up the flame sensor
+flame_pin = 14
+flame_sensor = machine.Pin(flame_pin, machine.Pin.IN)
+
+# Set up the buzzer
+buzzer_pin = 12
+buzzer = machine.Pin(buzzer_pin, machine.Pin.OUT)
+
+# Set up the LEDs
+led1_pin = 15
+led1 = machine.Pin(led1_pin, machine.Pin.OUT)
+led2_pin = 16
+led2 = machine.Pin(led2_pin, machine.Pin.OUT)
+
+# Function to trigger the alarm
+def trigger_alarm():
+    buzzer.value(1)
+    led1.value(1)
+    led2.value(1)
+    time.sleep(0.5)
+    buzzer.value(0)
+    led1.value(0)
+    led2.value(0)
+    time.sleep(0.5)
+
+# Main loop
+while True:
+    if flame_sensor.value() == 1:
+        trigger_alarm()
+    time.sleep(0.1)
